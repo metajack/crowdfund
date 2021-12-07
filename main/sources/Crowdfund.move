@@ -1,5 +1,5 @@
 module @Crowdfund::Crowdfund {
-    // creator creates a dummy sruct Foo which is the parameter for Project<T> and Pledge<T>
+    // creator creates a dummy struct Foo which is the parameter for Project<T> and Pledge<T>
     struct Project<T, phantom CoinType> {
         // TODO: reward_tiers,
         end_timestamp,
