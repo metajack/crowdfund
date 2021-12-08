@@ -14,7 +14,7 @@ module Crowdfund::Crowdfund {
         pledgers: vector<address>,
     }
 
-    struct Pledge<T, CoinType> {
+    struct Pledge<phantom T, CoinType> has key {
         project_address: address,
         amount: Coin<CoinType>,
         // TODO: chosen reward
@@ -44,7 +44,6 @@ module Crowdfund::Crowdfund {
     }
 
 
-    public fun pledge() {}
-    public fun cancel_pledge() {}
-    public fun reclaim_pledge() {}
+    public(script) fun pledge(pledger: signer, amount: u64) {}
+    public(script) fun cancel_pledge(pledger: signer) {}
 }
