@@ -1,7 +1,10 @@
 module Crowdfund::Crowdfund {
     use Std::ASCII;
+    use Std::Errors;
     use Std::Signer;
     use Std::Vector;
+
+    use DiemFramework::Diem::Diem;
 
     const EALREADY_HAS_PROJECT: u64 = 0;
     const EMISSING_PROJECT: u64 = 1;
@@ -16,7 +19,7 @@ module Crowdfund::Crowdfund {
 
     struct Pledge<phantom T, CoinType> has key {
         project_address: address,
-        amount: Coin<CoinType>,
+        amount: Diem<CoinType>,
         // TODO: chosen reward
     }
 
