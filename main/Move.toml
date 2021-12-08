@@ -9,4 +9,6 @@ Crowdfund = "_"
 Crowdfund = "0xcf"
 
 [dependencies]
+MoveStdlib = { local = "../stdlib", addr_subst = { "Std" = "0x1" } }
 DiemExperimental = { local = "../experimental" }
+BasicCoin = { local = "../BasicCoin" }
