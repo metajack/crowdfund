@@ -53,6 +53,66 @@ export async function creator_ProjectCreate(
   );
 }
 
+export async function cancelProject(
+  projectType: string,
+  goal: number,
+  end_time_secs: number,
+  sender?: UserContext,
+  moduleAddress?: string,
+) {
+  return await invokeScriptFunction(
+    "Crowdfund::cancel_project",
+    [`${projectType}`, "0x1::XUS::XUS"],
+    [mv.Ascii("canceled")],
+    sender,
+    moduleAddress,
+  );
+}
+
+export async function claimProject(
+  projectType: string,
+  sender?: UserContext,
+  moduleAddress?: string,
+) {
+  return await invokeScriptFunction(
+    "Crowdfund::claim_project",
+    [`${projectType}`, "0x1::XUS::XUS"],
+    [],
+    sender,
+    moduleAddress,
+  );
+}
+
+export async function pledge(
+  projectType: string,
+  projectAddress: string,
+  amount: number,
+  sender?: UserContext,
+  moduleAddress?: string,
+) {
+  return await invokeScriptFunction(
+    "Crowdfund::pledge",
+    [`${projectType}`, "0x1::XUS::XUS"],
+    [mv.Address(projectAddress), mv.U64(`${amount}`)],
+    sender,
+    moduleAddress,
+  );
+}
+
+export async function cancelPledge(
+  projectType: string,
+  sender?: UserContext,
+  moduleAddress?: string,
+) {
+  return await invokeScriptFunction(
+    "Crowdfund::pledge",
+    [`${projectType}`, "0x1::XUS::XUS"],
+    [],
+    sender,
+    moduleAddress,
+  );
+}
+
 async function invokeScriptFunction(
   funcName: string,
   typeArgs: string[],
