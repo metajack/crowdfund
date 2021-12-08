@@ -38,75 +38,16 @@ export async function printWelcome() {
   console.log();
 }
 
-// Invoke SetMessage script function by creating and executing transaction
-// with set_message script function payload.
-// See main/source/Message.move
-export async function setMessageScriptFunction(
-  message: string,
+export async function creator_ProjectCreate(
+  goal: number,
+  end_time_secs: number,
   sender?: UserContext,
   moduleAddress?: string,
 ) {
   return await invokeScriptFunction(
-    "Message::set_message",
-    [],
-    [mv.Ascii(message)],
-    sender,
-    moduleAddress,
-  );
-}
-
-// ScriptFunction example; creation of NFT.
-// See main/source/nft/TestNFT.move
-export async function createTestNFTScriptFunction(
-  contentUri: string,
-  nftType: string,
-  sender?: UserContext,
-  moduleAddress?: string,
-) {
-  return await invokeScriptFunction(
-    nftType + "::create_nft",
-    [],
-    [mv.Ascii(contentUri)],
-    sender,
-    moduleAddress,
-  );
-}
-
-// ScriptFunction example; creation of NFT.
-// See main/source/TestNFT.move
-export async function transferNFTScriptFunction(
-  to: string,
-  creator: string,
-  creationNum: string,
-  nftType: string,
-  sender?: UserContext,
-  moduleAddress?: string,
-) {
-  moduleAddress = moduleAddress || defaultUserContext.address;
-
-  return await invokeScriptFunction(
-    "NFTStandard::transfer",
-    [`${moduleAddress}::${nftType}::${nftType}`],
-    [mv.Address(to), mv.Address(creator), mv.U64(creationNum)],
-    sender,
-    moduleAddress,
-  );
-}
-
-// Initialize NFT
-// See main/source/nft/NFTStandard.move
-// See main/source/nft/TestNFT.move
-export async function initializeNFTScriptFunction(
-  nftType: string,
-  sender?: UserContext,
-  moduleAddress?: string,
-) {
-  moduleAddress = moduleAddress || defaultUserContext.address;
-
-  return await invokeScriptFunction(
-    "NFTStandard::initialize_nft_collection",
-    [`${moduleAddress}::${nftType}::${nftType}`],
-    [],
+    "TestProjectCreate::create_project",
+    [`0x1::XUS::XUS`],
+    [mv.U64(`${goal}`), mv.U64(`${end_time_secs}`)],
     sender,
     moduleAddress,
   );

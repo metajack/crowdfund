@@ -1,11 +1,11 @@
-module Crowdfund::Crowdfund {
+module Sender::Crowdfund {
     use Std::Errors;
     use Std::Signer;
     use Std::Vector;
     use DiemFramework::DiemTimestamp;
 
-    use NamedAddr::BasicCoin::Coin;
-    use NamedAddr::BasicCoin;
+    use Sender::BasicCoin::Coin;
+    use Sender::BasicCoin;
 
     const EALREADY_HAS_PROJECT: u64 = 0;
     const EMISSING_PROJECT: u64 = 1;
