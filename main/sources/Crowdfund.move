@@ -1,5 +1,4 @@
 module Crowdfund::Crowdfund {
-    use Std::ASCII;
     use Std::Errors;
     use Std::Signer;
     use Std::Vector;
@@ -17,16 +16,16 @@ module Crowdfund::Crowdfund {
         pledgers: vector<address>,
     }
 
-    struct Pledge<phantom T, CoinType> has key {
+    struct Pledge<phantom T, phantom CoinType> has key {
         project_address: address,
         amount: Diem<CoinType>,
         // TODO: chosen reward
     }
 
     /// Create a new crowdfund project. The phantom T is a creator provided empty struct.
-    public(script) fun create_project<T: drop, CoinType>(creator: signer, goal: u64, end_timestamp: u64, _witness: T) {
+    public fun create_project<T: drop, CoinType>(creator: signer, goal: u64, end_timestamp: u64, _witness: T) {
         assert!(!exists<Project<T, CoinType>>(Signer::address_of(&creator)), Errors::already_published(EALREADY_HAS_PROJECT));
-        move_to(&creator, Project {
+        move_to(&creator, Project<T, CoinType> {
             end_timestamp: end_timestamp,
             goal: goal,
             pledgers: Vector::empty(),
@@ -34,16 +33,15 @@ module Crowdfund::Crowdfund {
     }
 
     /// Cancel a crowdfund project. Projects can only be canceled before they end.
-    public(script) fun cancel_project<T, CoinType>(creator: signer, _reason: ASCII::String) {
+    public(script) fun cancel_project<T, CoinType>(creator: signer, _reason: vector<u8>) acquires Project {
         assert!(exists<Project<T, CoinType>>(Signer::address_of(&creator)), Errors::not_published(EMISSING_PROJECT));
-        let Project { end_timestamp: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(&creator);
+        let Project { end_timestamp: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(Signer::address_of(&creator));
     }
 
     /// Claim funds from a funded, ended project.
-    public(script) fun claim_project<T, CoinType>(creater: signer) {
+    public(script) fun claim_project<T, CoinType>(creator: signer) acquires Project {
         assert!(exists<Project<T, CoinType>>(Signer::address_of(&creator)), Errors::not_published(EMISSING_PROJECT));
-        let project = move_from<Project<T, CoinType>>(&creator);
-
+        let Project { end_timestamp: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(Signer::address_of(&creator));
     }
 
 
