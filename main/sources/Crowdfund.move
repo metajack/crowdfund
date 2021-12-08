@@ -44,13 +44,14 @@ module Sender::Crowdfund {
     }
 
     /// Cancel a crowdfund project. Projects can only be canceled before they end.
-    public(script) fun cancel_project<T, CoinType>(creator: signer, _reason: vector<u8>) acquires Project {
+    public(script) fun cancel_project<T, CoinType>(creator: signer, _reason: vector<u8>) acquires Project, Pledge {
         let creator_addr = Signer::address_of(&creator);
         assert!(exists<Project<T, CoinType>>(creator_addr), Errors::not_published(EMISSING_PROJECT));
         let current_secs = DiemTimestamp::now_seconds();
         let project = borrow_global<Project<T, CoinType>>(creator_addr);
         assert!(current_secs < project.end_time_secs, Errors::limit_exceeded(EPROJECT_ENDED));
-        let Project { end_time_secs: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(creator_addr);
+        let project = move_from<Project<T, CoinType>>(creator_addr);
+        return_funds(project);
     }
 
     /// Claim funds from a funded, ended project.
@@ -63,10 +64,11 @@ module Sender::Crowdfund {
 
         let fund_amount = amount_funded(&project);
 
-        let Project { end_time_secs: _, goal, pledgers } = project;
 
         // If goal was met, take all the funds
-        if (fund_amount >= goal) {
+        if (fund_amount >= project.goal) {
+            let Project { end_time_secs: _, goal: _, pledgers } = project;
+
             let i = 0;
             let len = Vector::length(&pledgers);
 
@@ -79,16 +81,22 @@ module Sender::Crowdfund {
             };
         } else {
             // Otherwise return fund
-            let i = 0;
-            let len = Vector::length(&pledgers);
+            return_funds(project);
+        };
+    }
 
-            while (i < len) {
-                let addr = Vector::borrow(&pledgers, i);
-                let Pledge { project_address: _, amount } = move_from<Pledge<T, CoinType>>(*addr);
-                BasicCoin::deposit(*addr, amount);
+    public fun return_funds<T, CoinType>(project: Project<T, CoinType>) acquires Pledge {
+        let Project { end_time_secs: _, goal: _, pledgers } = project;
 
-                i = i + 1;
-            };
+        let i = 0;
+        let len = Vector::length(&pledgers);
+
+        while (i < len) {
+            let addr = Vector::borrow(&pledgers, i);
+            let Pledge { project_address: _, amount } = move_from<Pledge<T, CoinType>>(*addr);
+            BasicCoin::deposit(*addr, amount);
+
+            i = i + 1;
         };
     }
 
