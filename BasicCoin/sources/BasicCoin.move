@@ -1,5 +1,5 @@
 /// This module defines a minimal and generic Coin and Balance.
-module NamedAddr::BasicCoin {
+module Sender::BasicCoin {
     use Std::Errors;
     use Std::Signer;
 

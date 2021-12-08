@@ -3,10 +3,7 @@ name = "Crowdfund"
 version = "1.0.0"
 
 [addresses]
-Crowdfund = "_"
-
-[dev-addresses]
-Crowdfund = "0xcf"
+Sender = "_"
 
 [dependencies]
 MoveStdlib = { local = "../stdlib", addr_subst = { Std = "0x1" } }
