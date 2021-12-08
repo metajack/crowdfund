@@ -75,8 +75,21 @@ module Crowdfund::Crowdfund {
         Vector::push_back(&mut project.pledgers, Signer::address_of(&pledger));
     }
 
-    public(script) fun cancel_pledge<T, CoinType>(pledger: signer) { 
+    //TODO error conditions
+    public(script) fun cancel_pledge<T, CoinType>(pledger: signer) acquires Pledge, Project {
         assert!(exists<Pledge<T, CoinType>>(Signer::address_of(&pledger)), Errors::not_published(EMISSING_PLEDGE));
 
+        let Pledge { project_address, amount } = move_from<Pledge<T, CoinType>>(Signer::address_of(&pledger));
+
+        assert!(exists<Project<T, CoinType>>(project_address), Errors::not_published(EMISSING_PROJECT));
+
+        let project = borrow_global_mut<Project<T, CoinType>>(project_address);
+
+        let (exists, i) = Vector::index_of(&project.pledgers, &Signer::address_of(&pledger));
+        assert!(exists, Errors::not_published(EMISSING_PLEDGE));
+
+        Vector::remove(&mut project.pledgers, i);
+
+        BasicCoin::deposit(Signer::address_of(&pledger), amount);
     }
 }
