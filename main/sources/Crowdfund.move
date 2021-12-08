@@ -58,6 +58,24 @@ module Crowdfund::Crowdfund {
         let Project { end_time_secs: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(Signer::address_of(creator));
     }
 
+    public fun fund_amount<T, CoinType>(project: &Project<T, CoinType>): u64 acquires Pledge {
+        let fund_amount = 0;
+        let i = 0;
+        let len = Vector::length(&project.pledgers);
+
+        while (i < len) {
+            
+            let addr = Vector::borrow(&project.pledgers, i);
+            let pledge = borrow_global<Pledge<T, CoinType>>(*addr);
+
+            fund_amount = fund_amount + BasicCoin::value(&pledge.amount);
+
+            i = i + 1;
+        };
+
+        fund_amount
+    }
+
     public(script) fun pledge<T, CoinType>(pledger: signer, project_address: address, amount: u64) acquires Project {
         assert!(exists<Project<T, CoinType>>(project_address), Errors::not_published(EMISSING_PROJECT));
         assert!(!exists<Pledge<T, CoinType>>(Signer::address_of(&pledger)), Errors::already_published(EALREADY_HAS_PLEDGE));

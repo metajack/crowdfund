@@ -17,6 +17,10 @@ module NamedAddr::BasicCoin {
         coin: Coin<CoinType>
     }
 
+    public fun value<CoinType>(coin: &Coin<CoinType>): u64 {
+        coin.value
+    }
+
     /// Publish an empty balance resource under `account`'s address. This function must be called before
     /// minting or transferring to the account.
     public fun publish_balance<CoinType>(account: &signer) {
