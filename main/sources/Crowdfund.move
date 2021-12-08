@@ -53,9 +53,41 @@ module Crowdfund::Crowdfund {
     }
 
     /// Claim funds from a funded, ended project.
-    public fun claim_project<T, CoinType>(creator: &signer) acquires Project {
+    public fun claim_project<T, CoinType>(creator: &signer) acquires Project, Pledge {
         assert!(exists<Project<T, CoinType>>(Signer::address_of(creator)), Errors::not_published(EMISSING_PROJECT));
-        let Project { end_time_secs: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(Signer::address_of(creator));
+
+        let project = move_from<Project<T, CoinType>>(Signer::address_of(creator));
+        assert!(project_has_ended(&project), Errors::limit_exceeded(EINSUFFICIENT_DURATION));
+
+        let fund_amount = fund_amount(&project);
+
+        let Project { end_time_secs: _, goal, pledgers } = project;
+
+        // If goal was met, take all the funds
+        if (fund_amount >= goal) {
+            let i = 0;
+            let len = Vector::length(&pledgers);
+
+            while (i < len) {
+                let addr = Vector::borrow(&pledgers, i);
+                let Pledge { project_address: _, amount } = move_from<Pledge<T, CoinType>>(*addr);
+                BasicCoin::deposit(Signer::address_of(creator), amount);
+
+                i = i + 1;
+            };
+        } else {
+            // Otherwise return fund
+            let i = 0;
+            let len = Vector::length(&pledgers);
+
+            while (i < len) {
+                let addr = Vector::borrow(&pledgers, i);
+                let Pledge { project_address: _, amount } = move_from<Pledge<T, CoinType>>(*addr);
+                BasicCoin::deposit(*addr, amount);
+
+                i = i + 1;
+            };
+        };
     }
 
 
@@ -111,6 +143,14 @@ module Crowdfund::Crowdfund {
         assert!(exists<Project<T, CoinType>>(project_address), Errors::not_published(EMISSING_PROJECT));
 
         let project = borrow_global_mut<Project<T, CoinType>>(project_address);
+
+        // Check to see if the user can pull their money out
+        if (project_has_ended(project)) {
+            // The project has ended and the goal hasn't been met
+            assert!(project.goal > fund_amount(project), Errors::limit_exceeded(EINSUFFICIENT_DURATION));
+        } else {
+            // No additional checks, you can just pull your money out
+        };
 
         let (exists, i) = Vector::index_of(&project.pledgers, &Signer::address_of(&pledger));
         assert!(exists, Errors::not_published(EMISSING_PLEDGE));
