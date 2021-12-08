@@ -44,7 +44,6 @@ module Crowdfund::Crowdfund {
         let Project { end_timestamp: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(Signer::address_of(&creator));
     }
 
-
     public(script) fun pledge(pledger: signer, amount: u64) {}
     public(script) fun cancel_pledge(pledger: signer) {}
 }
