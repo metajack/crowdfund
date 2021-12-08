@@ -31,6 +31,7 @@ module Sender::Crowdfund {
     }
 
     /// Create a new crowdfund project. The phantom T is a creator provided empty struct.
+    /// This is not a script function because of the witness.
     public fun create_project<T: drop, CoinType>(creator: &signer, goal: u64, end_time_secs: u64, _witness: T) {
         assert!(!exists<Project<T, CoinType>>(Signer::address_of(creator)), Errors::already_published(EALREADY_HAS_PROJECT));
         let current_secs = DiemTimestamp::now_seconds();
@@ -43,23 +44,24 @@ module Sender::Crowdfund {
     }
 
     /// Cancel a crowdfund project. Projects can only be canceled before they end.
-    public fun cancel_project<T, CoinType>(creator: &signer, _reason: vector<u8>) acquires Project {
-        assert!(exists<Project<T, CoinType>>(Signer::address_of(creator)), Errors::not_published(EMISSING_PROJECT));
+    public(script) fun cancel_project<T, CoinType>(creator: signer, _reason: vector<u8>) acquires Project {
+        let creator_addr = Signer::address_of(&creator);
+        assert!(exists<Project<T, CoinType>>(creator_addr), Errors::not_published(EMISSING_PROJECT));
         let current_secs = DiemTimestamp::now_seconds();
-        let addr = Signer::address_of(creator);
-        let project = borrow_global<Project<T, CoinType>>(addr);
+        let project = borrow_global<Project<T, CoinType>>(creator_addr);
         assert!(current_secs < project.end_time_secs, Errors::limit_exceeded(EPROJECT_ENDED));
-        let Project { end_time_secs: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(Signer::address_of(creator));
+        let Project { end_time_secs: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(creator_addr);
     }
 
     /// Claim funds from a funded, ended project.
-    public fun claim_project<T, CoinType>(creator: &signer) acquires Project, Pledge {
-        assert!(exists<Project<T, CoinType>>(Signer::address_of(creator)), Errors::not_published(EMISSING_PROJECT));
+    public(script) fun claim_project<T, CoinType>(creator: signer) acquires Project, Pledge {
+        let creator_addr = Signer::address_of(&creator);
+        assert!(exists<Project<T, CoinType>>(creator_addr), Errors::not_published(EMISSING_PROJECT));
 
-        let project = move_from<Project<T, CoinType>>(Signer::address_of(creator));
+        let project = move_from<Project<T, CoinType>>(creator_addr);
         assert!(project_has_ended(&project), Errors::limit_exceeded(EINSUFFICIENT_DURATION));
 
-        let fund_amount = fund_amount(&project);
+        let fund_amount = amount_funded(&project);
 
         let Project { end_time_secs: _, goal, pledgers } = project;
 
@@ -71,7 +73,7 @@ module Sender::Crowdfund {
             while (i < len) {
                 let addr = Vector::borrow(&pledgers, i);
                 let Pledge { project_address: _, amount } = move_from<Pledge<T, CoinType>>(*addr);
-                BasicCoin::deposit(Signer::address_of(creator), amount);
+                BasicCoin::deposit(creator_addr, amount);
 
                 i = i + 1;
             };
@@ -90,13 +92,14 @@ module Sender::Crowdfund {
         };
     }
 
-
+    /// Returns whether a Project has ended
     public fun project_has_ended<T, CoinType>(project: &Project<T, CoinType>): bool {
         let current_secs = DiemTimestamp::now_seconds();
         current_secs < project.end_time_secs
     }
 
-    public fun fund_amount<T, CoinType>(project: &Project<T, CoinType>): u64 acquires Pledge {
+    /// Current funding level of a project
+    public fun amount_funded<T, CoinType>(project: &Project<T, CoinType>): u64 acquires Pledge {
         let fund_amount = 0;
         let i = 0;
         let len = Vector::length(&project.pledgers);
@@ -114,6 +117,7 @@ module Sender::Crowdfund {
         fund_amount
     }
 
+    /// Pledge to a Project
     public(script) fun pledge<T, CoinType>(pledger: signer, project_address: address, amount: u64) acquires Project {
         assert!(exists<Project<T, CoinType>>(project_address), Errors::not_published(EMISSING_PROJECT));
         assert!(!exists<Pledge<T, CoinType>>(Signer::address_of(&pledger)), Errors::already_published(EALREADY_HAS_PLEDGE));
@@ -147,7 +151,7 @@ module Sender::Crowdfund {
         // Check to see if the user can pull their money out
         if (project_has_ended(project)) {
             // The project has ended and the goal hasn't been met
-            assert!(project.goal > fund_amount(project), Errors::limit_exceeded(EINSUFFICIENT_DURATION));
+            assert!(project.goal > amount_funded(project), Errors::limit_exceeded(EINSUFFICIENT_DURATION));
         } else {
             // No additional checks, you can just pull your money out
         };
