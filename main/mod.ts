@@ -38,7 +38,7 @@ export async function printWelcome() {
   console.log();
 }
 
-export async function creator_ProjectCreate(
+export async function creator_createProject(
   goal: number,
   end_time_secs: number,
   sender?: UserContext,
@@ -113,6 +113,10 @@ export async function cancelPledge(
   );
 }
 
+export async function current_secs() {
+  return Math.floor(Number((await devapi.ledgerInfo()).ledger_timestamp) / 1000000);
+}
+
 async function invokeScriptFunction(
   funcName: string,
   typeArgs: string[],
@@ -129,43 +133,4 @@ async function invokeScriptFunction(
     typeArgs,
     args,
   );
-}
-
-export async function decodedMessages(addr?: string) {
-  return (await devapi.resourcesWithName("MessageHolder", addr))
-    .map((entry) => entry.data.message);
-}
-
-export async function messageEvents(
-  start?: number,
-  limit?: number,
-  addr?: string,
-  moduleAddress?: string
-) {
-  moduleAddress = moduleAddress || defaultUserContext.address;
-  return await devapi.events(
-    `${moduleAddress}::Message::MessageHolder`,
-    "message_change_events",
-    start,
-    limit,
-    addr,
-  );
-}
-
-export async function decodedNFTs(addr?: string) {
-  const decodedNfts: any[] = [];
-  const nfts = (await devapi.resourcesWithName("NFTStandard", addr))
-    .filter((entry) => entry.data && entry.data.nfts)
-    .map((entry) => {
-      return entry.data.nfts;
-    });
-  nfts.forEach((nft_type: any) => {
-    nft_type.forEach((nft: any) => {
-      decodedNfts.push({
-        id: nft.id,
-        content_uri: DiemHelpers.hexToAscii(nft.content_uri),
-      });
-    });
-  });
-  return decodedNfts;
 }
