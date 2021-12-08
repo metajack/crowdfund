@@ -58,6 +58,12 @@ module Crowdfund::Crowdfund {
         let Project { end_time_secs: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(Signer::address_of(creator));
     }
 
+
+    public fun project_has_ended<T, CoinType>(project: &Project<T, CoinType>): bool {
+        let current_secs = DiemTimestamp::now_seconds();
+        current_secs < project.end_time_secs
+    }
+
     public fun fund_amount<T, CoinType>(project: &Project<T, CoinType>): u64 acquires Pledge {
         let fund_amount = 0;
         let i = 0;
@@ -80,6 +86,10 @@ module Crowdfund::Crowdfund {
         assert!(exists<Project<T, CoinType>>(project_address), Errors::not_published(EMISSING_PROJECT));
         assert!(!exists<Pledge<T, CoinType>>(Signer::address_of(&pledger)), Errors::already_published(EALREADY_HAS_PLEDGE));
 
+        let project = borrow_global_mut<Project<T, CoinType>>(project_address);
+
+        assert!(!project_has_ended(project), Errors::limit_exceeded(EPROJECT_ENDED));
+
         let pledge_amount = BasicCoin::withdraw(&pledger, amount);
 
         let pledge = Pledge<T, CoinType> {
@@ -89,7 +99,6 @@ module Crowdfund::Crowdfund {
 
         move_to(&pledger, pledge);
 
-        let project = borrow_global_mut<Project<T, CoinType>>(project_address);
         Vector::push_back(&mut project.pledgers, Signer::address_of(&pledger));
     }
 
