@@ -3,7 +3,8 @@ module Crowdfund::Crowdfund {
     use Std::Signer;
     use Std::Vector;
 
-    use DiemFramework::Diem::Diem;
+    use NamedAddr::BasicCoin::Coin;
+    use NamedAddr::BasicCoin;
 
     const EALREADY_HAS_PROJECT: u64 = 0;
     const EMISSING_PROJECT: u64 = 1;
@@ -20,7 +21,7 @@ module Crowdfund::Crowdfund {
 
     struct Pledge<phantom T, phantom CoinType> has key {
         project_address: address,
-        amount: Diem<CoinType>,
+        amount: Coin<CoinType>,
         // TODO: chosen reward
     }
 
@@ -46,18 +47,21 @@ module Crowdfund::Crowdfund {
         let Project { end_timestamp: _, goal: _, pledgers: _ } = move_from<Project<T, CoinType>>(Signer::address_of(&creator));
     }
 
-    public(script) fun pledge<T, CoinType>(pledger: signer, project_address: address, amount: u64) {
+    public(script) fun pledge<T, CoinType>(pledger: signer, project_address: address, amount: u64) acquires Project {
         assert!(exists<Project<T, CoinType>>(project_address), Errors::not_published(EMISSING_PROJECT));
         assert!(!exists<Pledge<T, CoinType>>(Signer::address_of(&pledger)), Errors::already_published(EALREADY_HAS_PLEDGE));
 
-        // let account_balance = borrow_global_mut<Balance<CoinType>>(Signer::address_of(&pledger));
+        let pledge_amount = BasicCoin::withdraw(&pledger, amount);
 
-        // let pledge_amount =
-        // let pledge = Pledge<T, CoinType> {
-        //     project_address: project_address,
-        //     amount: pledge_amount,
-        // };
+        let pledge = Pledge<T, CoinType> {
+            project_address: project_address,
+            amount: pledge_amount,
+        };
 
+        move_to(&pledger, pledge);
+
+        let project = borrow_global_mut<Project<T, CoinType>>(project_address);
+        Vector::push_back(&mut project.pledgers, Signer::address_of(&pledger));
     }
 
     public(script) fun cancel_pledge<T, CoinType>(pledger: signer) { 
